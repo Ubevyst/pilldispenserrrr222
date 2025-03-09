@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pill Dispenser Control</title>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+</head>
+<body>
+    <h1>Pill Dispenser Control</h1>
+    <p id="status">Connecting to MQTT...</p>
+    
+    <button onclick="dispensePill()">Dispense Pill</button>
+    
+    <h2>Set Dispense Times</h2>
+    <input type="time" id="dispenseTime">
+    <button onclick="addDispenseTime()">Add Time</button>
+    
+    <h3>Scheduled Times</h3>
+    <ul id="scheduleList"></ul>
+
+    <h2>Logs</h2>
+    <textarea id="logs" rows="10" cols="50"></textarea>
+
+    <script>
+        const brokerUrl = "wss://f8ce84ba874c4225b531260f66793bc4.s1.eu.hivemq.cloud:8884/mqtt";
+        const options = {
+            username: "Aphelios",
+            password: "Edgviper2021"
+        };
+        
+        const client = mqtt.connect(brokerUrl, options);
+        const scheduledTimes = [];
+        
+        client.on("connect", function () {
+            document.getElementById("status").innerText = "Connected to MQTT broker";
+        });
+        
+        client.on("error", function (error) {
+            document.getElementById("status").innerText = "Error: " + error;
+        });
+        
+        function dispensePill() {
+            client.publish("pill/dispenser", "dispense");
+            logMessage("Sent: dispense");
+        }
+        
+        function addDispenseTime() {
+            const timeInput = document.getElementById("dispenseTime").value;
+            if (timeInput && !scheduledTimes.includes(timeInput)) {
+                scheduledTimes.push(timeInput);
+                updateScheduleList();
+                client.publish("pill/dispenser/time", timeInput);
+                logMessage("Scheduled time: " + timeInput);
+            }
+        }
+        
+        function updateScheduleList() {
+            const list = document.getElementById("scheduleList");
+            list.innerHTML = "";
+            scheduledTimes.forEach(time => {
+                const item = document.createElement("li");
+                item.innerText = time;
+                list.appendChild(item);
+            });
+        }
+        
+        function logMessage(message) {
+            const logs = document.getElementById("logs");
+            logs.value += message + "\n";
+            logs.scrollTop = logs.scrollHeight;
+        }
+    </script>
+</body>
+</html>
